@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Customer Churn Prediction - React Frontend
 
 A complete React frontend application for Customer Churn Prediction featuring modern UI/UX, interactive data visualizations, and AI-powered analytics.
@@ -213,3 +214,6 @@ The React Compiler is not enabled on this template. To add it, see [this documen
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+=======
+# Customer_Churn_prediction
+>>>>>>> b381af53b1d04925a65f83a0052888f669e15a46
