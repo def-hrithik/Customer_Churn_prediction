@@ -1,0 +1,320 @@
+/* Enhanced AnimatedChart Component Styles */
+.animated-chart-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transform: translateY(30px) scale(0.95);
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 16px;
+  background: var(--card-bg);
+  padding: 1.5rem;
+  box-shadow: 
+    0 4px 20px rgba(0, 0, 0, 0.08),
+    0 0 0 1px var(--border);
+  overflow: hidden;
+  
+  /* Custom properties for animations */
+  --chart-progress: 0;
+}
+
+.animated-chart-container.visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.animated-chart-container.chart-animate-in {
+  animation: chartSlideIn 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.animated-chart-container.chart-loaded {
+  position: relative;
+}
+
+.animated-chart-container.chart-loaded::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+  border-radius: 16px 16px 0 0;
+  animation: progressBar 0.5s ease-out 0.5s forwards;
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+.animated-chart-container.zoomed {
+  z-index: 10;
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.15),
+    0 0 0 2px var(--accent);
+  transform-origin: center;
+}
+
+/* Chart loading overlay */
+.chart-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--card-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+  border-radius: 16px;
+}
+
+.chart-skeleton {
+  display: flex;
+  align-items: end;
+  gap: 8px;
+  height: 120px;
+  margin-bottom: 1rem;
+}
+
+.skeleton-bars {
+  display: flex;
+  align-items: end;
+  gap: 8px;
+  height: 100%;
+}
+
+.skeleton-bar {
+  width: 24px;
+  background: linear-gradient(
+    90deg,
+    var(--bg-secondary) 0%,
+    var(--border) 50%,
+    var(--bg-secondary) 100%
+  );
+  background-size: 200% 100%;
+  border-radius: 4px 4px 0 0;
+  animation: skeletonWave 1.5s ease-in-out infinite;
+}
+
+.loading-text {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  opacity: 0.8;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* Mobile gesture controls */
+.chart-mobile-controls {
+  position: absolute;
+  bottom: 1rem;
+  left: 1rem;
+  right: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.zoom-reset-btn {
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(77, 171, 247, 0.3);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  pointer-events: auto;
+  backdrop-filter: blur(10px);
+}
+
+.zoom-reset-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(77, 171, 247, 0.4);
+}
+
+.zoom-reset-btn:active {
+  transform: translateY(0);
+}
+
+.gesture-hint {
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.625rem;
+  font-weight: 500;
+  opacity: 0.8;
+  backdrop-filter: blur(10px);
+  animation: fadeInOut 3s ease-in-out infinite;
+}
+
+/* Chart animations */
+@keyframes chartSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes progressBar {
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes skeletonWave {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@keyframes fadeInOut {
+  0%, 100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* Responsive design for charts */
+@media (max-width: 768px) {
+  .animated-chart-container {
+    padding: 1rem;
+    border-radius: 12px;
+  }
+  
+  .chart-skeleton {
+    height: 80px;
+    gap: 6px;
+  }
+  
+  .skeleton-bar {
+    width: 18px;
+  }
+  
+  .chart-mobile-controls {
+    bottom: 0.5rem;
+    left: 0.5rem;
+    right: 0.5rem;
+  }
+  
+  .zoom-reset-btn {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.6875rem;
+  }
+  
+  .gesture-hint {
+    font-size: 0.5625rem;
+    padding: 0.1875rem 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .animated-chart-container {
+    padding: 0.75rem;
+    border-radius: 8px;
+  }
+  
+  .chart-skeleton {
+    height: 60px;
+    gap: 4px;
+  }
+  
+  .skeleton-bar {
+    width: 14px;
+  }
+  
+  .gesture-hint {
+    font-size: 0.5rem;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .animated-chart-container {
+    transition: transform 0.2s ease-out;
+  }
+  
+  .zoom-reset-btn:hover {
+    transform: none;
+  }
+  
+  .zoom-reset-btn:active {
+    transform: scale(0.95);
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .animated-chart-container {
+    border: 2px solid var(--text-primary);
+  }
+  
+  .skeleton-bar {
+    background: var(--text-primary);
+    opacity: 0.3;
+  }
+  
+  .zoom-reset-btn {
+    border: 1px solid white;
+  }
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .animated-chart-container {
+    animation: none;
+    transition: opacity 0.2s ease;
+  }
+  
+  .skeleton-bar {
+    animation: none;
+  }
+  
+  .loading-text {
+    animation: none;
+  }
+  
+  .gesture-hint {
+    animation: none;
+  }
+  
+  .chart-loading-overlay {
+    transition: none;
+  }
+}
+
+/* Print styles */
+@media print {
+  .chart-mobile-controls {
+    display: none;
+  }
+  
+  .animated-chart-container {
+    box-shadow: none;
+    border: 1px solid #000;
+  }
+}
