@@ -16,19 +16,8 @@ const Prediction = () => {
     age: '',
     tenure: '',
     monthlyCharges: '',
-    totalCharges: '',
     contract: 'Month-to-month',
-    internetService: 'DSL',
-    paymentMethod: 'Electronic check',
-    gender: 'Male',
-    partner: 'No',
-    dependents: 'No',
-    phoneService: 'Yes',
-    onlineSecurity: 'No',
-    onlineBackup: 'No',
-    techSupport: 'No',
-    streamingTV: 'No',
-    streamingMovies: 'No'
+    paymentMethod: 'Electronic check'
   });
 
   const [prediction, setPrediction] = useState(null);
@@ -88,10 +77,6 @@ const Prediction = () => {
       errors.monthlyCharges = 'Please enter valid monthly charges';
     }
     
-    if (!formData.totalCharges || formData.totalCharges <= 0) {
-      errors.totalCharges = 'Please enter valid total charges';
-    }
-    
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -123,16 +108,34 @@ const Prediction = () => {
       const tenure = parseInt(formData.tenure);
       const monthlyCharges = parseFloat(formData.monthlyCharges);
       
-      // Simple risk calculation based on form data
+      // Enhanced risk calculation based on simplified form data
       let riskScore = 0;
       
-      if (formData.contract === 'Month-to-month') riskScore += 30;
-      if (monthlyCharges > 70) riskScore += 20;
-      if (tenure < 12) riskScore += 25;
-      if (formData.paymentMethod === 'Electronic check') riskScore += 15;
-      if (formData.onlineSecurity === 'No') riskScore += 10;
+      // Contract type impact (highest impact)
+      if (formData.contract === 'Month-to-month') riskScore += 35;
+      else if (formData.contract === 'One year') riskScore += 15;
+      else if (formData.contract === 'Two year') riskScore += 5;
       
-      const churnProbability = Math.min(Math.max(riskScore + (Math.random() * 20 - 10), 5), 95);
+      // Monthly charges impact
+      if (monthlyCharges > 80) riskScore += 25;
+      else if (monthlyCharges > 60) riskScore += 15;
+      else if (monthlyCharges > 40) riskScore += 10;
+      
+      // Tenure impact
+      if (tenure < 6) riskScore += 30;
+      else if (tenure < 12) riskScore += 20;
+      else if (tenure < 24) riskScore += 10;
+      
+      // Payment method impact
+      if (formData.paymentMethod === 'Electronic check') riskScore += 20;
+      else if (formData.paymentMethod === 'Mailed check') riskScore += 10;
+      else if (formData.paymentMethod === 'Bank transfer') riskScore += 5;
+      
+      // Age impact (older customers tend to be more loyal)
+      if (age < 30) riskScore += 10;
+      else if (age > 65) riskScore -= 5;
+      
+      const churnProbability = Math.min(Math.max(riskScore + (Math.random() * 15 - 7.5), 5), 95);
       
       await new Promise(resolve => setTimeout(resolve, 700));
 
@@ -144,10 +147,38 @@ const Prediction = () => {
         riskLevel: churnProbability > 70 ? 'High' : churnProbability > 40 ? 'Medium' : 'Low',
         confidence: 85 + Math.random() * 10,
         factors: [
-          { name: 'Contract Type', impact: formData.contract === 'Month-to-month' ? 'High' : 'Low', value: formData.contract },
-          { name: 'Monthly Charges', impact: monthlyCharges > 70 ? 'High' : 'Medium', value: `$${monthlyCharges}` },
-          { name: 'Tenure', impact: tenure < 12 ? 'High' : 'Low', value: `${tenure} months` },
-          { name: 'Payment Method', impact: formData.paymentMethod === 'Electronic check' ? 'Medium' : 'Low', value: formData.paymentMethod }
+          { 
+            name: 'Contract Type', 
+            impact: formData.contract === 'Month-to-month' ? 85 : 
+                   formData.contract === 'One year' ? 45 : 25, 
+            value: formData.contract 
+          },
+          { 
+            name: 'Monthly Charges', 
+            impact: monthlyCharges > 80 ? 80 : 
+                   monthlyCharges > 60 ? 60 : 
+                   monthlyCharges > 40 ? 45 : 30, 
+            value: `$${monthlyCharges}` 
+          },
+          { 
+            name: 'Tenure', 
+            impact: tenure < 6 ? 90 : 
+                   tenure < 12 ? 70 : 
+                   tenure < 24 ? 40 : 20, 
+            value: `${tenure} months` 
+          },
+          { 
+            name: 'Payment Method', 
+            impact: formData.paymentMethod === 'Electronic check' ? 70 :
+                   formData.paymentMethod === 'Mailed check' ? 50 :
+                   formData.paymentMethod === 'Bank transfer' ? 30 : 25, 
+            value: formData.paymentMethod 
+          },
+          { 
+            name: 'Customer Age', 
+            impact: age < 30 ? 55 : age > 65 ? 25 : 35, 
+            value: `${age} years` 
+          }
         ],
         recommendations: churnProbability > 50 ? 
           ['Consider offering loyalty incentives', 'Improve customer support', 'Upgrade contract terms'] :
@@ -249,20 +280,9 @@ const Prediction = () => {
       ['Date', new Date().toLocaleDateString()],
       ['Customer Age', formData.age],
       ['Tenure (months)', formData.tenure],
-      ['Monthly Charges', formData.monthlyCharges],
-      ['Total Charges', formData.totalCharges],
+      ['Monthly Charges ($)', formData.monthlyCharges],
       ['Contract Type', formData.contract],
-      ['Internet Service', formData.internetService],
       ['Payment Method', formData.paymentMethod],
-      ['Gender', formData.gender],
-      ['Partner', formData.partner],
-      ['Dependents', formData.dependents],
-      ['Phone Service', formData.phoneService],
-      ['Online Security', formData.onlineSecurity],
-      ['Online Backup', formData.onlineBackup],
-      ['Tech Support', formData.techSupport],
-      ['Streaming TV', formData.streamingTV],
-      ['Streaming Movies', formData.streamingMovies],
       ['', ''],
       ['PREDICTION RESULTS', ''],
       ['Churn Probability (%)', prediction.churnProbability.toFixed(1)],
@@ -270,7 +290,7 @@ const Prediction = () => {
       ['Model Confidence (%)', prediction.confidence.toFixed(1)],
       ['', ''],
       ['RISK FACTORS', ''],
-      ...prediction.factors.map(factor => [factor.name, `${factor.impact} (${factor.value})`])
+      ...prediction.factors.map(factor => [factor.name, `Impact: ${factor.impact}% (${factor.value})`])
     ];
     
     const csvContent = csvData.map(row => 
@@ -288,20 +308,28 @@ const Prediction = () => {
       backgroundColor: [
         prediction.churnProbability > 60 ? '#ff6b6b' : 
         prediction.churnProbability > 30 ? '#ffd43b' : '#51cf66',
-        '#e3f2fd'
+        isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(59, 130, 246, 0.1)'
       ],
       borderColor: [
         prediction.churnProbability > 60 ? '#ff5252' : 
         prediction.churnProbability > 30 ? '#ffc107' : '#4caf50',
-        '#90caf9'
+        isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(59, 130, 246, 0.2)'
       ],
-      borderWidth: 2,
+      borderWidth: 3,
       hoverBackgroundColor: [
         prediction.churnProbability > 60 ? '#ff5252' : 
         prediction.churnProbability > 30 ? '#ffc107' : '#4caf50',
-        '#bbdefb'
+        isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(59, 130, 246, 0.2)'
       ],
-      hoverBorderWidth: 3
+      hoverBorderWidth: 4,
+      hoverBorderColor: [
+        prediction.churnProbability > 60 ? '#d32f2f' : 
+        prediction.churnProbability > 30 ? '#f57c00' : '#388e3c',
+        isDarkMode ? 'rgba(255, 255, 255, 0.3)' : 'rgba(59, 130, 246, 0.3)'
+      ],
+      cutout: '65%',
+      rotation: -90,
+      circumference: 360
     }]
   } : null;
 
@@ -310,20 +338,40 @@ const Prediction = () => {
     datasets: [{
       label: 'Impact Score (%)',
       data: prediction.factors.map(factor => factor.impact),
-      backgroundColor: prediction.factors.map(factor => 
-        factor.impact > 70 ? '#ff6b6b' :
-        factor.impact > 40 ? '#ffd43b' : '#51cf66'
-      ),
-      borderColor: prediction.factors.map(factor => 
-        factor.impact > 70 ? '#ff5252' :
-        factor.impact > 40 ? '#ffc107' : '#4caf50'
-      ),
-      borderWidth: 1,
-      hoverBackgroundColor: prediction.factors.map(factor => 
-        factor.impact > 70 ? '#ff5252' :
-        factor.impact > 40 ? '#ffc107' : '#4caf50'
-      ),
-      hoverBorderWidth: 2
+      backgroundColor: prediction.factors.map(factor => {
+        if (factor.impact > 70) return 'rgba(255, 107, 107, 0.8)'; // High impact - Red
+        if (factor.impact > 40) return 'rgba(255, 212, 59, 0.8)';  // Medium impact - Yellow  
+        return 'rgba(81, 207, 102, 0.8)'; // Low impact - Green
+      }),
+      borderColor: prediction.factors.map(factor => {
+        if (factor.impact > 70) return '#ff5252'; // High impact - Dark Red
+        if (factor.impact > 40) return '#ffc107'; // Medium impact - Dark Yellow
+        return '#4caf50'; // Low impact - Dark Green
+      }),
+      borderWidth: 2,
+      borderRadius: 8,
+      borderSkipped: false,
+      hoverBackgroundColor: prediction.factors.map(factor => {
+        if (factor.impact > 70) return 'rgba(255, 107, 107, 1)';
+        if (factor.impact > 40) return 'rgba(255, 212, 59, 1)';
+        return 'rgba(81, 207, 102, 1)';
+      }),
+      hoverBorderColor: prediction.factors.map(factor => {
+        if (factor.impact > 70) return '#d32f2f'; // Darker red on hover
+        if (factor.impact > 40) return '#f57c00'; // Darker orange on hover
+        return '#388e3c'; // Darker green on hover
+      }),
+      hoverBorderWidth: 3,
+      // Add gradient effect
+      gradient: {
+        backgroundColor: {
+          axis: 'y',
+          colors: {
+            0: 'rgba(81, 207, 102, 0.1)',
+            100: 'rgba(255, 107, 107, 0.9)'
+          }
+        }
+      }
     }]
   } : null;
 
@@ -414,37 +462,6 @@ const Prediction = () => {
                   </div>
                   
                   <div className="form-group">
-                    <label className="form-label">
-                      Total Charges ($) <span className="required">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      name="totalCharges"
-                      value={formData.totalCharges}
-                      onChange={handleInputChange}
-                      className={`form-control ${formErrors.totalCharges ? 'error' : ''}`}
-                      placeholder="Enter total charges"
-                      step="0.01"
-                      min="0"
-                      required
-                    />
-                    {formErrors.totalCharges && <span className="error-text">{formErrors.totalCharges}</span>}
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Gender</label>
-                    <select
-                      name="gender"
-                      value={formData.gender}
-                      onChange={handleInputChange}
-                      className="form-control form-select"
-                    >
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                    </select>
-                  </div>
-                  
-                  <div className="form-group">
                     <label className="form-label">Contract Type</label>
                     <select
                       name="contract"
@@ -455,20 +472,6 @@ const Prediction = () => {
                       <option value="Month-to-month">Month-to-month</option>
                       <option value="One year">One year</option>
                       <option value="Two year">Two year</option>
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Internet Service</label>
-                    <select
-                      name="internetService"
-                      value={formData.internetService}
-                      onChange={handleInputChange}
-                      className="form-control form-select"
-                    >
-                      <option value="DSL">DSL</option>
-                      <option value="Fiber optic">Fiber optic</option>
-                      <option value="No">No internet</option>
                     </select>
                   </div>
                   
@@ -484,58 +487,6 @@ const Prediction = () => {
                       <option value="Mailed check">Mailed check</option>
                       <option value="Bank transfer">Bank transfer</option>
                       <option value="Credit card">Credit card</option>
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Partner</label>
-                    <select
-                      name="partner"
-                      value={formData.partner}
-                      onChange={handleInputChange}
-                      className="form-control form-select"
-                    >
-                      <option value="Yes">Yes</option>
-                      <option value="No">No</option>
-                    </select>
-                  </div>
-                  
-                  <div className="form-group">
-                    <label className="form-label">Dependents</label>
-                    <select
-                      name="dependents"
-                      value={formData.dependents}
-                      onChange={handleInputChange}
-                      className="form-control form-select"
-                    >
-                      <option value="Yes">Yes</option>
-                      <option value="No">No</option>
-                    </select>
-                  </div>
-                  
-                  <div className="form-group">
-                    <label className="form-label">Online Security</label>
-                    <select
-                      name="onlineSecurity"
-                      value={formData.onlineSecurity}
-                      onChange={handleInputChange}
-                      className="form-control form-select"
-                    >
-                      <option value="Yes">Yes</option>
-                      <option value="No">No</option>
-                    </select>
-                  </div>
-                  
-                  <div className="form-group">
-                    <label className="form-label">Tech Support</label>
-                    <select
-                      name="techSupport"
-                      value={formData.techSupport}
-                      onChange={handleInputChange}
-                      className="form-control form-select"
-                    >
-                      <option value="Yes">Yes</option>
-                      <option value="No">No</option>
                     </select>
                   </div>
                 </div>
@@ -677,10 +628,47 @@ const Prediction = () => {
                         enableMobileGestures={true}
                         title="Churn Probability Distribution"
                         options={{
-                          cutout: '60%',
+                          responsive: true,
+                          maintainAspectRatio: false,
+                          cutout: '65%',
+                          animation: {
+                            animateRotate: true,
+                            animateScale: true,
+                            duration: 2000,
+                            easing: 'easeOutQuart'
+                          },
                           plugins: {
                             legend: {
-                              position: 'bottom'
+                              position: 'bottom',
+                              labels: {
+                                padding: 20,
+                                font: {
+                                  size: 14,
+                                  weight: '500'
+                                },
+                                color: isDarkMode ? '#ffffff' : '#374151',
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                              }
+                            },
+                            tooltip: {
+                              backgroundColor: isDarkMode ? 'rgba(31, 41, 55, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                              titleColor: isDarkMode ? '#ffffff' : '#374151',
+                              bodyColor: isDarkMode ? '#d1d5db' : '#6b7280',
+                              borderColor: isDarkMode ? 'rgba(75, 85, 99, 0.3)' : 'rgba(209, 213, 219, 0.3)',
+                              borderWidth: 1,
+                              cornerRadius: 8,
+                              displayColors: true,
+                              callbacks: {
+                                label: function(context) {
+                                  return `${context.label}: ${context.parsed.toFixed(1)}%`;
+                                }
+                              }
+                            }
+                          },
+                          elements: {
+                            arc: {
+                              borderJoinStyle: 'round'
                             }
                           }
                         }}
@@ -705,6 +693,102 @@ const Prediction = () => {
                         delay={600}
                         enableMobileGestures={true}
                         title="Risk Factors by Impact"
+                        options={{
+                          responsive: true,
+                          maintainAspectRatio: false,
+                          animation: {
+                            duration: 2500,
+                            easing: 'easeOutBounce',
+                            delay: (context) => {
+                              return context.dataIndex * 200;
+                            }
+                          },
+                          scales: {
+                            y: {
+                              beginAtZero: true,
+                              max: 100,
+                              grid: {
+                                color: isDarkMode ? 'rgba(75, 85, 99, 0.2)' : 'rgba(209, 213, 219, 0.3)',
+                                lineWidth: 1
+                              },
+                              ticks: {
+                                color: isDarkMode ? '#d1d5db' : '#6b7280',
+                                font: {
+                                  size: 12,
+                                  weight: '500'
+                                },
+                                callback: function(value) {
+                                  return value + '%';
+                                }
+                              },
+                              title: {
+                                display: true,
+                                text: 'Impact Score (%)',
+                                color: isDarkMode ? '#ffffff' : '#374151',
+                                font: {
+                                  size: 14,
+                                  weight: '600'
+                                }
+                              }
+                            },
+                            x: {
+                              grid: {
+                                display: false
+                              },
+                              ticks: {
+                                color: isDarkMode ? '#d1d5db' : '#6b7280',
+                                font: {
+                                  size: 11,
+                                  weight: '500'
+                                },
+                                maxRotation: 45,
+                                minRotation: 0
+                              }
+                            }
+                          },
+                          plugins: {
+                            legend: {
+                              display: false
+                            },
+                            tooltip: {
+                              backgroundColor: isDarkMode ? 'rgba(31, 41, 55, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+                              titleColor: isDarkMode ? '#ffffff' : '#374151',
+                              bodyColor: isDarkMode ? '#d1d5db' : '#6b7280',
+                              borderColor: isDarkMode ? 'rgba(75, 85, 99, 0.3)' : 'rgba(209, 213, 219, 0.3)',
+                              borderWidth: 1,
+                              cornerRadius: 8,
+                              displayColors: false,
+                              callbacks: {
+                                title: function(context) {
+                                  return context[0].label;
+                                },
+                                label: function(context) {
+                                  const factor = prediction.factors[context.dataIndex];
+                                  return [
+                                    `Impact Score: ${context.parsed.y.toFixed(1)}%`,
+                                    `Value: ${factor.value}`,
+                                    `Risk Level: ${context.parsed.y > 70 ? 'High' : context.parsed.y > 40 ? 'Medium' : 'Low'}`
+                                  ];
+                                }
+                              }
+                            }
+                          },
+                          elements: {
+                            bar: {
+                              borderSkipped: false,
+                              borderRadius: {
+                                topLeft: 8,
+                                topRight: 8,
+                                bottomLeft: 4,
+                                bottomRight: 4
+                              }
+                            }
+                          },
+                          interaction: {
+                            intersect: false,
+                            mode: 'index'
+                          }
+                        }}
                       />
                     ) : (
                       <SkeletonLoader variant="chart" />

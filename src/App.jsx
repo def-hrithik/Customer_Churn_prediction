@@ -2,7 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
 import Navbar from './components/Navbar';
-import Chatbot from './components/Chatbot';
+import AIChatbot from './components/AIChatbot';
 import Home from './pages/Home';
 import Prediction from './pages/Prediction';
 import Insights from './pages/Insights';
@@ -21,7 +21,7 @@ function App() {
               <Route path="/insights" element={<Insights />} />
             </Routes>
           </main>
-          <Chatbot />
+          <AIChatbot />
         </div>
       </Router>
     </ThemeProvider>

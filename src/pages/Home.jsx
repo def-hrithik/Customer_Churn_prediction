@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import ChurnExplanation from '../components/ChurnExplanation';
 import './Home.css';
 
 const Home = () => {
@@ -28,6 +29,9 @@ const Home = () => {
           </div>
         </div>
       </section>
+
+      {/* Churn Explanation Section */}
+      <ChurnExplanation />
 
       {/* Features Section */}
       <section className="features">
