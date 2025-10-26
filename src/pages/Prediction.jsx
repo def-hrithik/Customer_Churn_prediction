@@ -9,11 +9,13 @@ import { useProgressiveLoading, useLazyLoading } from '../hooks/useLoading';
 import { useTheme } from '../contexts/ThemeContext';
 import './Prediction.css';
 import '../components/AnimatedChart.css';
+import axios from 'axios';
+
 
 const Prediction = () => {
   const { isDarkMode } = useTheme();
   const [formData, setFormData] = useState({
-    age: '',
+    seniorCitizen: '',
     tenure: '',
     monthlyCharges: '',
     contract: 'Month-to-month',
@@ -64,11 +66,10 @@ const Prediction = () => {
 
   const validateForm = () => {
     const errors = {};
-    
-    if (!formData.age || formData.age < 18 || formData.age > 100) {
-      errors.age = 'Please enter a valid age (18-100)';
+    if (formData.seniorCitizen !== '0' && formData.seniorCitizen !== '1'){
+      errors.seniorCitizen = 'Please Select Senior Citizen Status';
     }
-    
+
     if (!formData.tenure || formData.tenure < 0 || formData.tenure > 100) {
       errors.tenure = 'Please enter a valid tenure (0-100 months)';
     }
@@ -89,186 +90,101 @@ const Prediction = () => {
     }
     
     setLoading(true);
-    resetLoading();
+    progressLoading(true);
 
     try {
-      // Stage 1: Validating
-      nextStage();
-      await new Promise(resolve => setTimeout(resolve, 800));
+      const orderedInput = {
+      seniorCitizen: formData.seniorCitizen,
+      tenure: formData.tenure,
+      contract: formData.contract,
+      paymentMethod: formData.paymentMethod,
+      monthlyCharges: formData.monthlyCharges,
+    };
 
-      // Stage 2: Processing
-      nextStage();
-      await new Promise(resolve => setTimeout(resolve, 700));
+      const response = await axios.post("/api/predict", orderedInput);
+      const churnProbability = response.data.churn_probability_percent;
 
-      // Stage 3: Analyzing
-      nextStage();
-      
-      // Simulate API call with more realistic prediction logic
-      const age = parseInt(formData.age);
-      const tenure = parseInt(formData.tenure);
-      const monthlyCharges = parseFloat(formData.monthlyCharges);
-      
-      // Enhanced risk calculation based on simplified form data
-      let riskScore = 0;
-      
-      // Contract type impact (highest impact)
-      if (formData.contract === 'Month-to-month') riskScore += 35;
-      else if (formData.contract === 'One year') riskScore += 15;
-      else if (formData.contract === 'Two year') riskScore += 5;
-      
-      // Monthly charges impact
-      if (monthlyCharges > 80) riskScore += 25;
-      else if (monthlyCharges > 60) riskScore += 15;
-      else if (monthlyCharges > 40) riskScore += 10;
-      
-      // Tenure impact
-      if (tenure < 6) riskScore += 30;
-      else if (tenure < 12) riskScore += 20;
-      else if (tenure < 24) riskScore += 10;
-      
-      // Payment method impact
-      if (formData.paymentMethod === 'Electronic check') riskScore += 20;
-      else if (formData.paymentMethod === 'Mailed check') riskScore += 10;
-      else if (formData.paymentMethod === 'Bank transfer') riskScore += 5;
-      
-      // Age impact (older customers tend to be more loyal)
-      if (age < 30) riskScore += 10;
-      else if (age > 65) riskScore -= 5;
-      
-      const churnProbability = Math.min(Math.max(riskScore + (Math.random() * 15 - 7.5), 5), 95);
-      
-      await new Promise(resolve => setTimeout(resolve, 700));
+      const riskLevel =
+        churnProbability > 70 ? "High" : churnProbability > 40 ? "Medium" : "Low";
 
-      // Stage 4: Complete
-      completeLoading();
-      
-      const mockPrediction = {
+      const predictionResult = {
         churnProbability,
-        riskLevel: churnProbability > 70 ? 'High' : churnProbability > 40 ? 'Medium' : 'Low',
-        confidence: 85 + Math.random() * 10,
+        riskLevel,
+        confidence: 85,
         factors: [
-          { 
-            name: 'Contract Type', 
-            impact: formData.contract === 'Month-to-month' ? 85 : 
-                   formData.contract === 'One year' ? 45 : 25, 
-            value: formData.contract 
+          {
+            name: "Contract Type",
+            impact:
+              formData.contract === "Month-to-month"
+                ? 85
+                : formData.contract === "One year"
+                ? 45
+                : 25,
+            value: formData.contract,
           },
-          { 
-            name: 'Monthly Charges', 
-            impact: monthlyCharges > 80 ? 80 : 
-                   monthlyCharges > 60 ? 60 : 
-                   monthlyCharges > 40 ? 45 : 30, 
-            value: `$${monthlyCharges}` 
+          {
+            name: "Monthly Charges",
+            impact:
+              formData.monthlyCharges > 80
+                ? 80
+                : formData.monthlyCharges > 60
+                ? 60
+                : formData.monthlyCharges > 40
+                ? 45
+                : 30,
+            value: `$${formData.monthlyCharges}`,
           },
-          { 
-            name: 'Tenure', 
-            impact: tenure < 6 ? 90 : 
-                   tenure < 12 ? 70 : 
-                   tenure < 24 ? 40 : 20, 
-            value: `${tenure} months` 
+          {
+            name: "Tenure",
+            impact:
+              formData.tenure < 6
+                ? 90
+                : formData.tenure < 12
+                ? 70
+                : formData.tenure < 24
+                ? 40
+                : 20,
+            value: `${formData.tenure} months`,
           },
-          { 
-            name: 'Payment Method', 
-            impact: formData.paymentMethod === 'Electronic check' ? 70 :
-                   formData.paymentMethod === 'Mailed check' ? 50 :
-                   formData.paymentMethod === 'Bank transfer' ? 30 : 25, 
-            value: formData.paymentMethod 
+          {
+            name: "Payment Method",
+            impact:
+              formData.paymentMethod === "Electronic check"
+                ? 70
+                : formData.paymentMethod === "Mailed check"
+                ? 50
+                : formData.paymentMethod === "Bank transfer (automatic)"
+                ? 30
+                : 25,
+            value: formData.paymentMethod,
           },
-          { 
-            name: 'Customer Age', 
-            impact: age < 30 ? 55 : age > 65 ? 25 : 35, 
-            value: `${age} years` 
-          }
+          {
+            name: "Senior Citizen Status",
+            impact: formData.seniorCitizen === "1" ? 55 : 25,
+            value: formData.seniorCitizen === "1" ? "Yes" : "No",
+          },
         ],
-        recommendations: churnProbability > 50 ? 
-          ['Consider offering loyalty incentives', 'Improve customer support', 'Upgrade contract terms'] :
-          ['Monitor engagement', 'Maintain service quality', 'Regular check-ins']
+        recommendations:
+          churnProbability > 50
+            ? [
+                "Consider offering loyalty incentives",
+                "Improve customer support",
+                "Upgrade contract terms",
+              ]
+            : [
+                "Monitor engagement",
+                "Maintain service quality",
+                "Regular check-ins",
+              ],
       };
-      
-      setPrediction(mockPrediction);
-      setLoading(false);
-      markChartLoaded();
-      
-      // Scroll to results on mobile
-      if (window.innerWidth < 768) {
-        setTimeout(() => {
-          document.querySelector('.prediction-results')?.scrollIntoView({ 
-            behavior: 'smooth',
-            block: 'start'
-          });
-        }, 300);
-      }
-    } catch (error) {
-      console.error('Prediction error:', error);
-      setLoading(false);
-      resetLoading();
-    }
-  };
 
-  const toggleFormVisibility = () => {
-    setIsFormVisible(!isFormVisible);
-  };
-
-  // Export functions
-  const exportToPDF = async () => {
-    if (!prediction) return;
-    
-    try {
-      setLoading(true);
-      
-      const element = document.querySelector('.prediction-results');
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: isDarkMode ? '#1a202c' : '#ffffff'
-      });
-      
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      
-      // Add title
-      pdf.setFontSize(20);
-      pdf.text('Customer Churn Prediction Report', 20, 30);
-      
-      // Add date
-      pdf.setFontSize(12);
-      pdf.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 40);
-      
-      // Add prediction summary
-      pdf.setFontSize(14);
-      pdf.text(`Churn Probability: ${prediction.churnProbability.toFixed(1)}%`, 20, 55);
-      pdf.text(`Risk Level: ${prediction.riskLevel}`, 20, 65);
-      pdf.text(`Confidence: ${prediction.confidence.toFixed(1)}%`, 20, 75);
-      
-      // Add chart image
-      const imgWidth = 170;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      pdf.addImage(imgData, 'PNG', 20, 85, imgWidth, imgHeight);
-      
-      // Add recommendations if high risk
-      if (prediction.riskLevel === 'High') {
-        pdf.addPage();
-        pdf.setFontSize(16);
-        pdf.text('Recommended Actions:', 20, 30);
-        
-        pdf.setFontSize(12);
-        const recommendations = [
-          'Contact customer immediately for retention discussion',
-          'Consider offering promotional discounts or upgrades',
-          'Schedule personalized customer support session'
-        ];
-        
-        recommendations.forEach((rec, index) => {
-          pdf.text(`${index + 1}. ${rec}`, 25, 45 + (index * 10));
-        });
-      }
-      
-      pdf.save(`churn-prediction-report-${new Date().toISOString().split('T')[0]}.pdf`);
-      
+      setPrediction(predictionResult);
     } catch (error) {
-      console.error('PDF export failed:', error);
+      console.error("Prediction error:", error);
+      alert("Error fetching prediction. Please try again.");
     } finally {
       setLoading(false);
+      resetLoading()
     }
   };
 
@@ -409,21 +325,24 @@ const Prediction = () => {
                 <div className="form-grid">
                   <div className="form-group">
                     <label className="form-label">
-                      Age <span className="required">*</span>
+                      Senior Citizen <span className="required">*</span>
                     </label>
-                    <input
-                      type="number"
-                      name="age"
-                      value={formData.age}
+                    <select
+                      name="seniorCitizen"
+                      value={formData.seniorCitizen}
                       onChange={handleInputChange}
-                      className={`form-control ${formErrors.age ? 'error' : ''}`}
-                      placeholder="Enter age (18-100)"
-                      min="18"
-                      max="100"
+                      className={`form-control ${formErrors.seniorCitizen ? 'error' : ''}`}
                       required
-                    />
-                    {formErrors.age && <span className="error-text">{formErrors.age}</span>}
+                    >
+                      <option value="">Select</option>
+                      <option value="0">No</option>
+                      <option value="1">Yes</option>
+                    </select>
+                    {formErrors.seniorCitizen && (
+                      <span className="error-text">{formErrors.seniorCitizen}</span>
+                    )}
                   </div>
+
                   
                   <div className="form-group">
                     <label className="form-label">
@@ -441,24 +360,6 @@ const Prediction = () => {
                       required
                     />
                     {formErrors.tenure && <span className="error-text">{formErrors.tenure}</span>}
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">
-                      Monthly Charges ($) <span className="required">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      name="monthlyCharges"
-                      value={formData.monthlyCharges}
-                      onChange={handleInputChange}
-                      className={`form-control ${formErrors.monthlyCharges ? 'error' : ''}`}
-                      placeholder="Enter monthly charges"
-                      step="0.01"
-                      min="0"
-                      required
-                    />
-                    {formErrors.monthlyCharges && <span className="error-text">{formErrors.monthlyCharges}</span>}
                   </div>
                   
                   <div className="form-group">
@@ -489,6 +390,25 @@ const Prediction = () => {
                       <option value="Credit card">Credit card</option>
                     </select>
                   </div>
+
+                  <div className="form-group">
+                    <label className="form-label">
+                      Monthly Charges ($) <span className="required">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      name="monthlyCharges"
+                      value={formData.monthlyCharges}
+                      onChange={handleInputChange}
+                      className={`form-control ${formErrors.monthlyCharges ? 'error' : ''}`}
+                      placeholder="Enter monthly charges"
+                      step="0.01"
+                      min="0"
+                      required
+                    />
+                    {formErrors.monthlyCharges && <span className="error-text">{formErrors.monthlyCharges}</span>}
+                  </div>
+
                 </div>
 
                 <button
