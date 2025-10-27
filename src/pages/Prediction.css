@@ -392,18 +392,6 @@
   font-size: 0.95rem;
 }
 
-/* Loading States */
-.loading-stage-indicator {
-  text-align: center;
-  padding: 2rem;
-}
-
-.stage-text {
-  margin-top: 1rem;
-  font-size: 1.125rem;
-  color: var(--text-secondary);
-}
-
 /* Toggle Button */
 .toggle-form-btn {
   background: none;

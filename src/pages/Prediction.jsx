@@ -3,9 +3,6 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { saveAs } from 'file-saver';
 import AnimatedChart from '../components/AnimatedChart';
-import SkeletonLoader from '../components/SkeletonLoader';
-import LoadingSpinner, { ProgressSpinner, LoadingOverlay } from '../components/LoadingSpinner';
-import { useProgressiveLoading, useLazyLoading } from '../hooks/useLoading';
 import { useTheme } from '../contexts/ThemeContext';
 import './Prediction.css';
 import '../components/AnimatedChart.css';
@@ -26,27 +23,6 @@ const Prediction = () => {
   const [loading, setLoading] = useState(false);
   const [formErrors, setFormErrors] = useState({});
   const [isFormVisible, setIsFormVisible] = useState(true);
-
-  // Progressive loading states
-  const {
-    currentStage,
-    isLoading: progressLoading,
-    loadingProgress,
-    nextStage,
-    complete: completeLoading,
-    reset: resetLoading
-  } = useProgressiveLoading({
-    loadingStages: ['validating', 'processing', 'analyzing', 'complete'],
-    stageDelays: [0, 800, 1500, 2200],
-    autoProgress: false
-  });
-
-  // Lazy loading for charts
-  const { 
-    elementRef: chartRef, 
-    isVisible: isChartVisible,
-    markAsLoaded: markChartLoaded 
-  } = useLazyLoading();
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -90,7 +66,6 @@ const Prediction = () => {
     }
     
     setLoading(true);
-    progressLoading(true);
 
     try {
       const orderedInput = {
@@ -184,7 +159,6 @@ const Prediction = () => {
       alert("Error fetching prediction. Please try again.");
     } finally {
       setLoading(false);
-      resetLoading()
     }
   };
 
@@ -414,63 +388,18 @@ const Prediction = () => {
                 <button
                   type="submit"
                   className="btn btn-primary btn-lg prediction-btn"
-                  disabled={loading || progressLoading}
+                  disabled={loading}
                 >
-                  {loading || progressLoading ? (
-                    <>
-                      <LoadingSpinner 
-                        variant="dots" 
-                        size="small" 
-                        inline 
-                        color="primary"
-                      />
-                      <span className="loading-text">
-                        {currentStage === 'validating' && 'Validating data...'}
-                        {currentStage === 'processing' && 'Processing input...'}
-                        {currentStage === 'analyzing' && 'Analyzing patterns...'}
-                        {currentStage === 'complete' && 'Finalizing results...'}
-                      </span>
-                      <div className="loading-progress">
-                        <div 
-                          className="progress-bar" 
-                          style={{ width: `${loadingProgress}%` }}
-                        />
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <span className="btn-icon">🔮</span>
-                      <span>Predict Churn</span>
-                    </>
-                  )}
+                  <span className="btn-icon">🔮</span>
+                  <span>Predict Churn</span>
                 </button>
               </form>
             </div>
           </div>
 
           <div className="results-section">
-            {loading || progressLoading ? (
+            {prediction ? (
               <div className="prediction-results">
-                <LoadingOverlay isVisible={true} backdrop={false}>
-                  <SkeletonLoader variant="card" className="result-skeleton" />
-                </LoadingOverlay>
-                
-                <div className="loading-stage-indicator">
-                  <ProgressSpinner 
-                    progress={loadingProgress} 
-                    size="large"
-                    showPercentage={true}
-                  />
-                  <div className="stage-text">
-                    {currentStage === 'validating' && '🔍 Validating your data...'}
-                    {currentStage === 'processing' && '⚙️ Processing information...'}
-                    {currentStage === 'analyzing' && '🧠 Analyzing patterns...'}
-                    {currentStage === 'complete' && '✨ Generating insights...'}
-                  </div>
-                </div>
-              </div>
-            ) : prediction ? (
-              <div className="prediction-results" ref={chartRef}>
                 <div className="card result-card">
                   <div className="result-header">
                     <h2>
@@ -539,15 +468,14 @@ const Prediction = () => {
                     Risk Distribution
                   </h3>
                   <div className="chart-container">
-                    {isChartVisible ? (
-                      <AnimatedChart 
-                        type="doughnut"
-                        data={probabilityData}
-                        animate={true}
-                        delay={300}
-                        enableMobileGestures={true}
-                        title="Churn Probability Distribution"
-                        options={{
+                    <AnimatedChart 
+                      type="doughnut"
+                      data={probabilityData}
+                      animate={true}
+                      delay={300}
+                      enableMobileGestures={true}
+                      title="Churn Probability Distribution"
+                      options={{
                           responsive: true,
                           maintainAspectRatio: false,
                           cutout: '65%',
@@ -593,9 +521,6 @@ const Prediction = () => {
                           }
                         }}
                       />
-                    ) : (
-                      <SkeletonLoader variant="chart" />
-                    )}
                   </div>
                 </div>
 
@@ -605,15 +530,14 @@ const Prediction = () => {
                     Feature Impact Analysis
                   </h3>
                   <div className="chart-container">
-                    {isChartVisible ? (
-                      <AnimatedChart 
-                        type="bar"
-                        data={factorsData}
-                        animate={true}
-                        delay={600}
-                        enableMobileGestures={true}
-                        title="Risk Factors by Impact"
-                        options={{
+                    <AnimatedChart 
+                      type="bar"
+                      data={factorsData}
+                      animate={true}
+                      delay={600}
+                      enableMobileGestures={true}
+                      title="Risk Factors by Impact"
+                      options={{
                           responsive: true,
                           maintainAspectRatio: false,
                           animation: {
@@ -710,9 +634,6 @@ const Prediction = () => {
                           }
                         }}
                       />
-                    ) : (
-                      <SkeletonLoader variant="chart" />
-                    )}
                   </div>
                 </div>
 
