@@ -77,83 +77,9 @@ const Prediction = () => {
     };
 
       const response = await axios.post("/api/predict", orderedInput);
-      const churnProbability = response.data.churn_probability_percent;
-
-      const riskLevel =
-        churnProbability > 70 ? "High" : churnProbability > 40 ? "Medium" : "Low";
-
-      const predictionResult = {
-        churnProbability,
-        riskLevel,
-        confidence: 85,
-        factors: [
-          {
-            name: "Contract Type",
-            impact:
-              formData.contract === "Month-to-month"
-                ? 85
-                : formData.contract === "One year"
-                ? 45
-                : 25,
-            value: formData.contract,
-          },
-          {
-            name: "Monthly Charges",
-            impact:
-              formData.monthlyCharges > 80
-                ? 80
-                : formData.monthlyCharges > 60
-                ? 60
-                : formData.monthlyCharges > 40
-                ? 45
-                : 30,
-            value: `$${formData.monthlyCharges}`,
-          },
-          {
-            name: "Tenure",
-            impact:
-              formData.tenure < 6
-                ? 90
-                : formData.tenure < 12
-                ? 70
-                : formData.tenure < 24
-                ? 40
-                : 20,
-            value: `${formData.tenure} months`,
-          },
-          {
-            name: "Payment Method",
-            impact:
-              formData.paymentMethod === "Electronic check"
-                ? 70
-                : formData.paymentMethod === "Mailed check"
-                ? 50
-                : formData.paymentMethod === "Bank transfer (automatic)"
-                ? 30
-                : 25,
-            value: formData.paymentMethod,
-          },
-          {
-            name: "Senior Citizen Status",
-            impact: formData.seniorCitizen === "1" ? 55 : 25,
-            value: formData.seniorCitizen === "1" ? "Yes" : "No",
-          },
-        ],
-        recommendations:
-          churnProbability > 50
-            ? [
-                "Consider offering loyalty incentives",
-                "Improve customer support",
-                "Upgrade contract terms",
-              ]
-            : [
-                "Monitor engagement",
-                "Maintain service quality",
-                "Regular check-ins",
-              ],
-      };
-
-      setPrediction(predictionResult);
+      
+      // Use the complete response from the backend directly
+      setPrediction(response.data);
     } catch (error) {
       console.error("Prediction error:", error);
       alert("Error fetching prediction. Please try again.");

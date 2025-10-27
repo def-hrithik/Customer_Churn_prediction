@@ -9,12 +9,13 @@ const AIChatbot = () => {
     {
       id: 1,
       type: 'bot',
-      content: 'Hello! I\'m your AI Assistant for customer churn prediction. How can I help you today?',
+      content: 'Hello! I\'m your AI Assistant powered by Google Gemini. I can help you with customer churn prediction and analysis. How can I help you today?',
       timestamp: new Date()
     }
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [error, setError] = useState(null);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -54,33 +55,8 @@ const AIChatbot = () => {
     }
   };
 
-  const generateBotResponse = (userMessage) => {
-    const message = userMessage.toLowerCase();
-    
-    // Enhanced AI responses for customer churn prediction context
-    if (message.includes('churn') || message.includes('predict')) {
-      return 'I can help you understand churn prediction! Our model analyzes customer age, tenure, monthly charges, contract type, and payment method to predict the likelihood of customer churn. Would you like me to explain any specific aspect?';
-    } else if (message.includes('age') || message.includes('tenure') || message.includes('charges')) {
-      return 'These are key factors in our prediction model:\n\n• **Age**: Customer age affects loyalty patterns\n• **Tenure**: How long they\'ve been a customer\n• **Monthly Charges**: Higher charges can increase churn risk\n\nWhich factor would you like to know more about?';
-    } else if (message.includes('contract')) {
-      return 'Contract types significantly impact churn probability:\n\n• **Month-to-month**: Highest churn risk (35% impact)\n• **One year**: Medium risk (15% impact)\n• **Two year**: Lowest risk (5% impact)\n\nLonger contracts provide better customer retention!';
-    } else if (message.includes('payment')) {
-      return 'Payment methods affect churn likelihood:\n\n• **Electronic check**: Higher risk (20% impact)\n• **Mailed check**: Medium risk (10% impact)\n• **Bank transfer & Credit card**: Lower risk (5% impact)\n\nAutomatic payment methods tend to improve retention.';
-    } else if (message.includes('how') || message.includes('work')) {
-      return 'Our AI model works by analyzing 5 key customer attributes and calculating a churn probability score. The system uses advanced algorithms to identify patterns that indicate whether a customer is likely to leave. Want to try making a prediction?';
-    } else if (message.includes('hello') || message.includes('hi') || message.includes('hey')) {
-      return 'Hello! I\'m here to help you with customer churn prediction. You can ask me about:\n\n• How the prediction model works\n• What factors influence churn\n• How to interpret results\n• Tips for customer retention\n\nWhat would you like to know?';
-    } else if (message.includes('help') || message.includes('support')) {
-      return 'I\'m here to help! I can assist you with:\n\n✅ Understanding churn prediction factors\n✅ Interpreting model results\n✅ Learning about customer retention\n✅ Navigating the prediction tool\n\nJust ask me anything related to customer churn analysis!';
-    } else if (message.includes('thanks') || message.includes('thank you')) {
-      return 'You\'re very welcome! I\'m always here to help you make better customer retention decisions. Feel free to ask if you have any other questions! 😊';
-    } else {
-      return 'That\'s an interesting question! While I specialize in customer churn prediction, I\'m here to help you understand how our AI model works, what factors influence customer retention, and how to interpret prediction results. Is there something specific about churn analysis you\'d like to know?';
-    }
-  };
-
   const handleSendMessage = async () => {
-    if (!inputValue.trim()) return;
+    if (!inputValue.trim() || isTyping) return;
 
     const userMessage = {
       id: Date.now(),
@@ -90,21 +66,59 @@ const AIChatbot = () => {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const currentMessage = inputValue;
     setInputValue('');
     setIsTyping(true);
+    setError(null);
 
-    // Simulate AI response delay
-    setTimeout(() => {
+    try {
+      // Call the server-side API proxy
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: currentMessage,
+          conversationHistory: messages.slice(-10).map(msg => ({
+            role: msg.type === 'user' ? 'user' : 'assistant',
+            content: msg.content
+          }))
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to get response');
+      }
+
+      // Add AI response to chat
       const botMessage = {
         id: Date.now() + 1,
         type: 'bot',
-        content: generateBotResponse(inputValue),
+        content: data.response,
         timestamp: new Date()
       };
-      
+
       setMessages(prev => [...prev, botMessage]);
+    } catch (err) {
+      console.error('Chat error:', err);
+      setError(err.message || 'Failed to send message. Please try again.');
+      
+      // Add error message to chat
+      const errorMessage = {
+        id: Date.now() + 1,
+        type: 'bot',
+        content: 'I apologize, but I encountered an error processing your request. Please try again or check your connection.',
+        timestamp: new Date(),
+        isError: true
+      };
+
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setIsTyping(false);
-    }, 1000 + Math.random() * 1500); // Random delay between 1-2.5 seconds
+    }
   };
 
   return (
