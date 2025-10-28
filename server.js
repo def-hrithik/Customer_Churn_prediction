@@ -9,6 +9,9 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Log API key status (not the actual key)
+console.log('🔑 API Key Status:', process.env.GEMINI_API_KEY ? 'Loaded ✓' : 'Missing ✗');
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -19,10 +22,22 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 // Chat endpoint
 app.post('/api/chat', async (req, res) => {
   try {
+    console.log('📩 Received chat request');
     const { message, conversationHistory } = req.body;
 
     if (!message) {
+      console.log('❌ No message provided');
       return res.status(400).json({ error: 'Message is required' });
+    }
+
+    console.log('💬 Processing message:', message.substring(0, 50) + '...');
+
+    // Check if API key is available
+    if (!process.env.GEMINI_API_KEY) {
+      console.error('❌ GEMINI_API_KEY is not set');
+      return res.status(500).json({ 
+        error: 'Server configuration error. API key not configured.' 
+      });
     }
 
     // Get the generative model
@@ -39,10 +54,14 @@ app.post('/api/chat', async (req, res) => {
       prompt = `${context}\nUser: ${message}\nAssistant:`;
     }
 
+    console.log('🤖 Calling Gemini API...');
+    
     // Generate response
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
+
+    console.log('✅ Response generated successfully');
 
     res.json({ 
       success: true, 
@@ -50,11 +69,17 @@ app.post('/api/chat', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Gemini API Error:', error);
+    console.error('❌ Gemini API Error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      name: error.name,
+      stack: error.stack
+    });
+    
     res.status(500).json({ 
       success: false, 
       error: 'Failed to generate response. Please try again.',
-      details: error.message 
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
@@ -62,7 +87,10 @@ app.post('/api/chat', async (req, res) => {
 // Prediction endpoint
 app.post('/api/predict', async (req, res) => {
   try {
+    console.log('🎯 Received prediction request');
     const { seniorCitizen, tenure, monthlyCharges, contract, paymentMethod } = req.body;
+    
+    console.log('📊 Input data:', { seniorCitizen, tenure, monthlyCharges, contract, paymentMethod });
 
     // Validate required fields
     if (
@@ -198,13 +226,15 @@ app.post('/api/predict', async (req, res) => {
       recommendations
     };
 
+    console.log('✅ Prediction calculated successfully:', predictionResult);
+
     res.json(predictionResult);
 
   } catch (error) {
-    console.error('Prediction Error:', error);
+    console.error('❌ Prediction Error:', error);
     res.status(500).json({ 
       error: 'Failed to generate prediction. Please try again.',
-      details: error.message 
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });

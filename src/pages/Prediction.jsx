@@ -88,6 +88,36 @@ const Prediction = () => {
     }
   };
 
+  const toggleFormVisibility = () => {
+    setIsFormVisible(!isFormVisible);
+  };
+
+  const exportToPDF = async () => {
+    if (!prediction) return;
+    
+    try {
+      const resultsElement = document.querySelector('.prediction-results');
+      if (!resultsElement) return;
+
+      const canvas = await html2canvas(resultsElement, {
+        scale: 2,
+        useCORS: true,
+        logging: false
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`churn-prediction-${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
+    }
+  };
+
   const exportToCSV = () => {
     if (!prediction) return;
     
