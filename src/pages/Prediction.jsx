@@ -434,13 +434,15 @@ const Prediction = () => {
                     Risk Distribution
                   </h3>
                   <div className="chart-container">
-                    <AnimatedChart 
-                      type="doughnut"
-                      data={probabilityData}
-                      animate={true}
-                      delay={300}
-                      enableMobileGestures={true}
-                      title="Churn Probability Distribution"
+                    {probabilityData && (
+                      <AnimatedChart 
+                        key={`probability-${prediction.churnProbability}`}
+                        type="doughnut"
+                        data={probabilityData}
+                        animate={true}
+                        delay={300}
+                        enableMobileGestures={true}
+                        title="Churn Probability Distribution"
                       options={{
                           responsive: true,
                           maintainAspectRatio: false,
@@ -487,6 +489,7 @@ const Prediction = () => {
                           }
                         }}
                       />
+                    )}
                   </div>
                 </div>
 
@@ -496,13 +499,15 @@ const Prediction = () => {
                     Feature Impact Analysis
                   </h3>
                   <div className="chart-container">
-                    <AnimatedChart 
-                      type="bar"
-                      data={factorsData}
-                      animate={true}
-                      delay={600}
-                      enableMobileGestures={true}
-                      title="Risk Factors by Impact"
+                    {factorsData && (
+                      <AnimatedChart 
+                        key={`factors-${prediction.churnProbability}`}
+                        type="bar"
+                        data={factorsData}
+                        animate={true}
+                        delay={600}
+                        enableMobileGestures={true}
+                        title="Risk Factors by Impact"
                       options={{
                           responsive: true,
                           maintainAspectRatio: false,
@@ -600,6 +605,7 @@ const Prediction = () => {
                           }
                         }}
                       />
+                    )}
                   </div>
                 </div>
 
