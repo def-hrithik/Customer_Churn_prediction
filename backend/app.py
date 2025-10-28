@@ -146,8 +146,19 @@ def predict():
     print(f'Feature vector keys: {list(full_input.keys())}')
 
 
-    result = {"churn_probability_percent": round(float(prediction) * 100, 2)}
-    return jsonify(result)
+    result = round(float(prediction) * 100, 2)
+    print(result)
+    return jsonify({
+    "churnProbability": result,           # your actual model prediction
+    "riskLevel": "High" if prediction > 0.7 else "Medium" if prediction > 0.4 else "Low",
+    "confidence": 80.0,                             # you can set a default or compute from model metrics
+    "factors": [
+        {"name": "Tenure", "impact": 65, "value": full_input['tenure']},
+        {"name": "MonthlyCharges", "impact": 25, "value": full_input['MonthlyCharges']}
+        # add more factors/ranking logic as needed
+        ]
+    })
+
 
 
 if __name__ == '__main__':
