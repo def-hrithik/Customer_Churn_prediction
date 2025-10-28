@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { saveAs } from 'file-saver';
@@ -147,79 +147,89 @@ const Prediction = () => {
     saveAs(blob, `churn-prediction-data-${new Date().toISOString().split('T')[0]}.csv`);
   };
 
-  const probabilityData = prediction ? {
-    labels: ['Churn Risk', 'Retention Likelihood'],
-    datasets: [{
-      data: [prediction.churnProbability, 100 - prediction.churnProbability],
-      backgroundColor: [
-        prediction.churnProbability > 60 ? '#ff6b6b' : 
-        prediction.churnProbability > 30 ? '#ffd43b' : '#51cf66',
-        isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(59, 130, 246, 0.1)'
-      ],
-      borderColor: [
-        prediction.churnProbability > 60 ? '#ff5252' : 
-        prediction.churnProbability > 30 ? '#ffc107' : '#4caf50',
-        isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(59, 130, 246, 0.2)'
-      ],
-      borderWidth: 3,
-      hoverBackgroundColor: [
-        prediction.churnProbability > 60 ? '#ff5252' : 
-        prediction.churnProbability > 30 ? '#ffc107' : '#4caf50',
-        isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(59, 130, 246, 0.2)'
-      ],
-      hoverBorderWidth: 4,
-      hoverBorderColor: [
-        prediction.churnProbability > 60 ? '#d32f2f' : 
-        prediction.churnProbability > 30 ? '#f57c00' : '#388e3c',
-        isDarkMode ? 'rgba(255, 255, 255, 0.3)' : 'rgba(59, 130, 246, 0.3)'
-      ],
-      cutout: '65%',
-      rotation: -90,
-      circumference: 360
-    }]
-  } : null;
+  // Memoize probability data to ensure charts update when prediction changes
+  const probabilityData = useMemo(() => {
+    if (!prediction) return null;
+    
+    return {
+      labels: ['Churn Risk', 'Retention Likelihood'],
+      datasets: [{
+        data: [prediction.churnProbability, 100 - prediction.churnProbability],
+        backgroundColor: [
+          prediction.churnProbability > 60 ? '#ff6b6b' : 
+          prediction.churnProbability > 30 ? '#ffd43b' : '#51cf66',
+          isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(59, 130, 246, 0.1)'
+        ],
+        borderColor: [
+          prediction.churnProbability > 60 ? '#ff5252' : 
+          prediction.churnProbability > 30 ? '#ffc107' : '#4caf50',
+          isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(59, 130, 246, 0.2)'
+        ],
+        borderWidth: 3,
+        hoverBackgroundColor: [
+          prediction.churnProbability > 60 ? '#ff5252' : 
+          prediction.churnProbability > 30 ? '#ffc107' : '#4caf50',
+          isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(59, 130, 246, 0.2)'
+        ],
+        hoverBorderWidth: 4,
+        hoverBorderColor: [
+          prediction.churnProbability > 60 ? '#d32f2f' : 
+          prediction.churnProbability > 30 ? '#f57c00' : '#388e3c',
+          isDarkMode ? 'rgba(255, 255, 255, 0.3)' : 'rgba(59, 130, 246, 0.3)'
+        ],
+        cutout: '65%',
+        rotation: -90,
+        circumference: 360
+      }]
+    };
+  }, [prediction, isDarkMode]);
 
-  const factorsData = prediction ? {
-    labels: prediction.factors.map(factor => factor.name),
-    datasets: [{
-      label: 'Impact Score (%)',
-      data: prediction.factors.map(factor => factor.impact),
-      backgroundColor: prediction.factors.map(factor => {
-        if (factor.impact > 70) return 'rgba(255, 107, 107, 0.8)'; // High impact - Red
-        if (factor.impact > 40) return 'rgba(255, 212, 59, 0.8)';  // Medium impact - Yellow  
-        return 'rgba(81, 207, 102, 0.8)'; // Low impact - Green
-      }),
-      borderColor: prediction.factors.map(factor => {
-        if (factor.impact > 70) return '#ff5252'; // High impact - Dark Red
-        if (factor.impact > 40) return '#ffc107'; // Medium impact - Dark Yellow
-        return '#4caf50'; // Low impact - Dark Green
-      }),
-      borderWidth: 2,
-      borderRadius: 8,
-      borderSkipped: false,
-      hoverBackgroundColor: prediction.factors.map(factor => {
-        if (factor.impact > 70) return 'rgba(255, 107, 107, 1)';
-        if (factor.impact > 40) return 'rgba(255, 212, 59, 1)';
-        return 'rgba(81, 207, 102, 1)';
-      }),
-      hoverBorderColor: prediction.factors.map(factor => {
-        if (factor.impact > 70) return '#d32f2f'; // Darker red on hover
-        if (factor.impact > 40) return '#f57c00'; // Darker orange on hover
-        return '#388e3c'; // Darker green on hover
-      }),
-      hoverBorderWidth: 3,
-      // Add gradient effect
-      gradient: {
-        backgroundColor: {
-          axis: 'y',
-          colors: {
-            0: 'rgba(81, 207, 102, 0.1)',
-            100: 'rgba(255, 107, 107, 0.9)'
+  // Memoize factors data to ensure charts update when prediction changes
+  const factorsData = useMemo(() => {
+    if (!prediction) return null;
+    
+    return {
+      labels: prediction.factors.map(factor => factor.name),
+      datasets: [{
+        label: 'Impact Score (%)',
+        data: prediction.factors.map(factor => factor.impact),
+        backgroundColor: prediction.factors.map(factor => {
+          if (factor.impact > 70) return 'rgba(255, 107, 107, 0.8)'; // High impact - Red
+          if (factor.impact > 40) return 'rgba(255, 212, 59, 0.8)';  // Medium impact - Yellow  
+          return 'rgba(81, 207, 102, 0.8)'; // Low impact - Green
+        }),
+        borderColor: prediction.factors.map(factor => {
+          if (factor.impact > 70) return '#ff5252'; // High impact - Dark Red
+          if (factor.impact > 40) return '#ffc107'; // Medium impact - Dark Yellow
+          return '#4caf50'; // Low impact - Dark Green
+        }),
+        borderWidth: 2,
+        borderRadius: 8,
+        borderSkipped: false,
+        hoverBackgroundColor: prediction.factors.map(factor => {
+          if (factor.impact > 70) return 'rgba(255, 107, 107, 1)';
+          if (factor.impact > 40) return 'rgba(255, 212, 59, 1)';
+          return 'rgba(81, 207, 102, 1)';
+        }),
+        hoverBorderColor: prediction.factors.map(factor => {
+          if (factor.impact > 70) return '#d32f2f'; // Darker red on hover
+          if (factor.impact > 40) return '#f57c00'; // Darker orange on hover
+          return '#388e3c'; // Darker green on hover
+        }),
+        hoverBorderWidth: 3,
+        // Add gradient effect
+        gradient: {
+          backgroundColor: {
+            axis: 'y',
+            colors: {
+              0: 'rgba(81, 207, 102, 0.1)',
+              100: 'rgba(255, 107, 107, 0.9)'
+            }
           }
         }
-      }
-    }]
-  } : null;
+      }]
+    };
+  }, [prediction]);
 
   return (
     <div className="prediction">
