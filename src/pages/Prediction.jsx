@@ -77,6 +77,8 @@ const Prediction = () => {
     };
 
       const response = await axios.post("/api/predict", orderedInput);
+
+      console.log('Received prediction data:', response.data);
       
       // Use the complete response from the backend directly
       setPrediction(response.data);
@@ -181,14 +183,15 @@ const Prediction = () => {
         rotation: -90,
         circumference: 360
       }]
+      
     };
   }, [prediction, isDarkMode]);
 
   // Memoize factors data to ensure charts update when prediction changes
   const factorsData = useMemo(() => {
     if (!prediction) return null;
-    
-    return {
+    console.log(probabilityData)
+return {
       labels: prediction.factors.map(factor => factor.name),
       datasets: [{
         label: 'Impact Score (%)',
@@ -230,6 +233,7 @@ const Prediction = () => {
       }]
     };
   }, [prediction]);
+  console.log(factorsData)
 
   return (
     <div className="prediction">
@@ -434,13 +438,15 @@ const Prediction = () => {
                     Risk Distribution
                   </h3>
                   <div className="chart-container">
-                    <AnimatedChart 
-                      type="doughnut"
-                      data={probabilityData}
-                      animate={true}
-                      delay={300}
-                      enableMobileGestures={true}
-                      title="Churn Probability Distribution"
+                    {probabilityData && (
+                      <AnimatedChart 
+                        key={`probability-${prediction.churnProbability}`}
+                        type="doughnut"
+                        data={probabilityData}
+                        animate={true}
+                        delay={300}
+                        enableMobileGestures={true}
+                        title="Churn Probability Distribution"
                       options={{
                           responsive: true,
                           maintainAspectRatio: false,
@@ -487,6 +493,7 @@ const Prediction = () => {
                           }
                         }}
                       />
+                    )}
                   </div>
                 </div>
 
@@ -496,13 +503,15 @@ const Prediction = () => {
                     Feature Impact Analysis
                   </h3>
                   <div className="chart-container">
-                    <AnimatedChart 
-                      type="bar"
-                      data={factorsData}
-                      animate={true}
-                      delay={600}
-                      enableMobileGestures={true}
-                      title="Risk Factors by Impact"
+                    {factorsData && (
+                      <AnimatedChart 
+                        key={`factors-${prediction.churnProbability}`}
+                        type="bar"
+                        data={factorsData}
+                        animate={true}
+                        delay={600}
+                        enableMobileGestures={true}
+                        title="Risk Factors by Impact"
                       options={{
                           responsive: true,
                           maintainAspectRatio: false,
@@ -600,6 +609,8 @@ const Prediction = () => {
                           }
                         }}
                       />
+                    )}
+                    
                   </div>
                 </div>
 
