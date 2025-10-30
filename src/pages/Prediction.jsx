@@ -1,19 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { saveAs } from 'file-saver';
 import AnimatedChart from '../components/AnimatedChart';
-import SkeletonLoader from '../components/SkeletonLoader';
-import LoadingSpinner, { ProgressSpinner, LoadingOverlay } from '../components/LoadingSpinner';
-import { useProgressiveLoading, useLazyLoading } from '../hooks/useLoading';
 import { useTheme } from '../contexts/ThemeContext';
 import './Prediction.css';
 import '../components/AnimatedChart.css';
+import axios from 'axios';
+
 
 const Prediction = () => {
   const { isDarkMode } = useTheme();
   const [formData, setFormData] = useState({
-    age: '',
+    seniorCitizen: '',
     tenure: '',
     monthlyCharges: '',
     contract: 'Month-to-month',
@@ -24,27 +23,6 @@ const Prediction = () => {
   const [loading, setLoading] = useState(false);
   const [formErrors, setFormErrors] = useState({});
   const [isFormVisible, setIsFormVisible] = useState(true);
-
-  // Progressive loading states
-  const {
-    currentStage,
-    isLoading: progressLoading,
-    loadingProgress,
-    nextStage,
-    complete: completeLoading,
-    reset: resetLoading
-  } = useProgressiveLoading({
-    loadingStages: ['validating', 'processing', 'analyzing', 'complete'],
-    stageDelays: [0, 800, 1500, 2200],
-    autoProgress: false
-  });
-
-  // Lazy loading for charts
-  const { 
-    elementRef: chartRef, 
-    isVisible: isChartVisible,
-    markAsLoaded: markChartLoaded 
-  } = useLazyLoading();
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -64,11 +42,10 @@ const Prediction = () => {
 
   const validateForm = () => {
     const errors = {};
-    
-    if (!formData.age || formData.age < 18 || formData.age > 100) {
-      errors.age = 'Please enter a valid age (18-100)';
+    if (formData.seniorCitizen !== '0' && formData.seniorCitizen !== '1'){
+      errors.seniorCitizen = 'Please Select Senior Citizen Status';
     }
-    
+
     if (!formData.tenure || formData.tenure < 0 || formData.tenure > 100) {
       errors.tenure = 'Please enter a valid tenure (0-100 months)';
     }
@@ -89,119 +66,27 @@ const Prediction = () => {
     }
     
     setLoading(true);
-    resetLoading();
 
     try {
-      // Stage 1: Validating
-      nextStage();
-      await new Promise(resolve => setTimeout(resolve, 800));
+      const orderedInput = {
+      seniorCitizen: formData.seniorCitizen,
+      tenure: formData.tenure,
+      contract: formData.contract,
+      paymentMethod: formData.paymentMethod,
+      monthlyCharges: formData.monthlyCharges,
+    };
 
-      // Stage 2: Processing
-      nextStage();
-      await new Promise(resolve => setTimeout(resolve, 700));
+      const response = await axios.post("/api/predict", orderedInput);
 
-      // Stage 3: Analyzing
-      nextStage();
+      console.log('Received prediction data:', response.data);
       
-      // Simulate API call with more realistic prediction logic
-      const age = parseInt(formData.age);
-      const tenure = parseInt(formData.tenure);
-      const monthlyCharges = parseFloat(formData.monthlyCharges);
-      
-      // Enhanced risk calculation based on simplified form data
-      let riskScore = 0;
-      
-      // Contract type impact (highest impact)
-      if (formData.contract === 'Month-to-month') riskScore += 35;
-      else if (formData.contract === 'One year') riskScore += 15;
-      else if (formData.contract === 'Two year') riskScore += 5;
-      
-      // Monthly charges impact
-      if (monthlyCharges > 80) riskScore += 25;
-      else if (monthlyCharges > 60) riskScore += 15;
-      else if (monthlyCharges > 40) riskScore += 10;
-      
-      // Tenure impact
-      if (tenure < 6) riskScore += 30;
-      else if (tenure < 12) riskScore += 20;
-      else if (tenure < 24) riskScore += 10;
-      
-      // Payment method impact
-      if (formData.paymentMethod === 'Electronic check') riskScore += 20;
-      else if (formData.paymentMethod === 'Mailed check') riskScore += 10;
-      else if (formData.paymentMethod === 'Bank transfer') riskScore += 5;
-      
-      // Age impact (older customers tend to be more loyal)
-      if (age < 30) riskScore += 10;
-      else if (age > 65) riskScore -= 5;
-      
-      const churnProbability = Math.min(Math.max(riskScore + (Math.random() * 15 - 7.5), 5), 95);
-      
-      await new Promise(resolve => setTimeout(resolve, 700));
-
-      // Stage 4: Complete
-      completeLoading();
-      
-      const mockPrediction = {
-        churnProbability,
-        riskLevel: churnProbability > 70 ? 'High' : churnProbability > 40 ? 'Medium' : 'Low',
-        confidence: 85 + Math.random() * 10,
-        factors: [
-          { 
-            name: 'Contract Type', 
-            impact: formData.contract === 'Month-to-month' ? 85 : 
-                   formData.contract === 'One year' ? 45 : 25, 
-            value: formData.contract 
-          },
-          { 
-            name: 'Monthly Charges', 
-            impact: monthlyCharges > 80 ? 80 : 
-                   monthlyCharges > 60 ? 60 : 
-                   monthlyCharges > 40 ? 45 : 30, 
-            value: `$${monthlyCharges}` 
-          },
-          { 
-            name: 'Tenure', 
-            impact: tenure < 6 ? 90 : 
-                   tenure < 12 ? 70 : 
-                   tenure < 24 ? 40 : 20, 
-            value: `${tenure} months` 
-          },
-          { 
-            name: 'Payment Method', 
-            impact: formData.paymentMethod === 'Electronic check' ? 70 :
-                   formData.paymentMethod === 'Mailed check' ? 50 :
-                   formData.paymentMethod === 'Bank transfer' ? 30 : 25, 
-            value: formData.paymentMethod 
-          },
-          { 
-            name: 'Customer Age', 
-            impact: age < 30 ? 55 : age > 65 ? 25 : 35, 
-            value: `${age} years` 
-          }
-        ],
-        recommendations: churnProbability > 50 ? 
-          ['Consider offering loyalty incentives', 'Improve customer support', 'Upgrade contract terms'] :
-          ['Monitor engagement', 'Maintain service quality', 'Regular check-ins']
-      };
-      
-      setPrediction(mockPrediction);
-      setLoading(false);
-      markChartLoaded();
-      
-      // Scroll to results on mobile
-      if (window.innerWidth < 768) {
-        setTimeout(() => {
-          document.querySelector('.prediction-results')?.scrollIntoView({ 
-            behavior: 'smooth',
-            block: 'start'
-          });
-        }, 300);
-      }
+      // Use the complete response from the backend directly
+      setPrediction(response.data);
     } catch (error) {
-      console.error('Prediction error:', error);
+      console.error("Prediction error:", error);
+      alert("Error fetching prediction. Please try again.");
+    } finally {
       setLoading(false);
-      resetLoading();
     }
   };
 
@@ -209,66 +94,29 @@ const Prediction = () => {
     setIsFormVisible(!isFormVisible);
   };
 
-  // Export functions
   const exportToPDF = async () => {
     if (!prediction) return;
     
     try {
-      setLoading(true);
-      
-      const element = document.querySelector('.prediction-results');
-      const canvas = await html2canvas(element, {
+      const resultsElement = document.querySelector('.prediction-results');
+      if (!resultsElement) return;
+
+      const canvas = await html2canvas(resultsElement, {
         scale: 2,
         useCORS: true,
-        backgroundColor: isDarkMode ? '#1a202c' : '#ffffff'
+        logging: false
       });
-      
+
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
-      
-      // Add title
-      pdf.setFontSize(20);
-      pdf.text('Customer Churn Prediction Report', 20, 30);
-      
-      // Add date
-      pdf.setFontSize(12);
-      pdf.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 40);
-      
-      // Add prediction summary
-      pdf.setFontSize(14);
-      pdf.text(`Churn Probability: ${prediction.churnProbability.toFixed(1)}%`, 20, 55);
-      pdf.text(`Risk Level: ${prediction.riskLevel}`, 20, 65);
-      pdf.text(`Confidence: ${prediction.confidence.toFixed(1)}%`, 20, 75);
-      
-      // Add chart image
-      const imgWidth = 170;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      pdf.addImage(imgData, 'PNG', 20, 85, imgWidth, imgHeight);
-      
-      // Add recommendations if high risk
-      if (prediction.riskLevel === 'High') {
-        pdf.addPage();
-        pdf.setFontSize(16);
-        pdf.text('Recommended Actions:', 20, 30);
-        
-        pdf.setFontSize(12);
-        const recommendations = [
-          'Contact customer immediately for retention discussion',
-          'Consider offering promotional discounts or upgrades',
-          'Schedule personalized customer support session'
-        ];
-        
-        recommendations.forEach((rec, index) => {
-          pdf.text(`${index + 1}. ${rec}`, 25, 45 + (index * 10));
-        });
-      }
-      
-      pdf.save(`churn-prediction-report-${new Date().toISOString().split('T')[0]}.pdf`);
-      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`churn-prediction-${new Date().toISOString().split('T')[0]}.pdf`);
     } catch (error) {
-      console.error('PDF export failed:', error);
-    } finally {
-      setLoading(false);
+      console.error('Error generating PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
     }
   };
 
@@ -301,79 +149,91 @@ const Prediction = () => {
     saveAs(blob, `churn-prediction-data-${new Date().toISOString().split('T')[0]}.csv`);
   };
 
-  const probabilityData = prediction ? {
-    labels: ['Churn Risk', 'Retention Likelihood'],
-    datasets: [{
-      data: [prediction.churnProbability, 100 - prediction.churnProbability],
-      backgroundColor: [
-        prediction.churnProbability > 60 ? '#ff6b6b' : 
-        prediction.churnProbability > 30 ? '#ffd43b' : '#51cf66',
-        isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(59, 130, 246, 0.1)'
-      ],
-      borderColor: [
-        prediction.churnProbability > 60 ? '#ff5252' : 
-        prediction.churnProbability > 30 ? '#ffc107' : '#4caf50',
-        isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(59, 130, 246, 0.2)'
-      ],
-      borderWidth: 3,
-      hoverBackgroundColor: [
-        prediction.churnProbability > 60 ? '#ff5252' : 
-        prediction.churnProbability > 30 ? '#ffc107' : '#4caf50',
-        isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(59, 130, 246, 0.2)'
-      ],
-      hoverBorderWidth: 4,
-      hoverBorderColor: [
-        prediction.churnProbability > 60 ? '#d32f2f' : 
-        prediction.churnProbability > 30 ? '#f57c00' : '#388e3c',
-        isDarkMode ? 'rgba(255, 255, 255, 0.3)' : 'rgba(59, 130, 246, 0.3)'
-      ],
-      cutout: '65%',
-      rotation: -90,
-      circumference: 360
-    }]
-  } : null;
+  // Memoize probability data to ensure charts update when prediction changes
+  const probabilityData = useMemo(() => {
+    if (!prediction) return null;
+    
+    return {
+      labels: ['Churn Risk', 'Retention Likelihood'],
+      datasets: [{
+        data: [prediction.churnProbability, 100 - prediction.churnProbability],
+        backgroundColor: [
+          prediction.churnProbability > 60 ? '#ff6b6b' : 
+          prediction.churnProbability > 30 ? '#ffd43b' : '#51cf66',
+          isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(59, 130, 246, 0.1)'
+        ],
+        borderColor: [
+          prediction.churnProbability > 60 ? '#ff5252' : 
+          prediction.churnProbability > 30 ? '#ffc107' : '#4caf50',
+          isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(59, 130, 246, 0.2)'
+        ],
+        borderWidth: 3,
+        hoverBackgroundColor: [
+          prediction.churnProbability > 60 ? '#ff5252' : 
+          prediction.churnProbability > 30 ? '#ffc107' : '#4caf50',
+          isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(59, 130, 246, 0.2)'
+        ],
+        hoverBorderWidth: 4,
+        hoverBorderColor: [
+          prediction.churnProbability > 60 ? '#d32f2f' : 
+          prediction.churnProbability > 30 ? '#f57c00' : '#388e3c',
+          isDarkMode ? 'rgba(255, 255, 255, 0.3)' : 'rgba(59, 130, 246, 0.3)'
+        ],
+        cutout: '65%',
+        rotation: -90,
+        circumference: 360
+      }]
+      
+    };
+  }, [prediction, isDarkMode]);
 
-  const factorsData = prediction ? {
-    labels: prediction.factors.map(factor => factor.name),
-    datasets: [{
-      label: 'Impact Score (%)',
-      data: prediction.factors.map(factor => factor.impact),
-      backgroundColor: prediction.factors.map(factor => {
-        if (factor.impact > 70) return 'rgba(255, 107, 107, 0.8)'; // High impact - Red
-        if (factor.impact > 40) return 'rgba(255, 212, 59, 0.8)';  // Medium impact - Yellow  
-        return 'rgba(81, 207, 102, 0.8)'; // Low impact - Green
-      }),
-      borderColor: prediction.factors.map(factor => {
-        if (factor.impact > 70) return '#ff5252'; // High impact - Dark Red
-        if (factor.impact > 40) return '#ffc107'; // Medium impact - Dark Yellow
-        return '#4caf50'; // Low impact - Dark Green
-      }),
-      borderWidth: 2,
-      borderRadius: 8,
-      borderSkipped: false,
-      hoverBackgroundColor: prediction.factors.map(factor => {
-        if (factor.impact > 70) return 'rgba(255, 107, 107, 1)';
-        if (factor.impact > 40) return 'rgba(255, 212, 59, 1)';
-        return 'rgba(81, 207, 102, 1)';
-      }),
-      hoverBorderColor: prediction.factors.map(factor => {
-        if (factor.impact > 70) return '#d32f2f'; // Darker red on hover
-        if (factor.impact > 40) return '#f57c00'; // Darker orange on hover
-        return '#388e3c'; // Darker green on hover
-      }),
-      hoverBorderWidth: 3,
-      // Add gradient effect
-      gradient: {
-        backgroundColor: {
-          axis: 'y',
-          colors: {
-            0: 'rgba(81, 207, 102, 0.1)',
-            100: 'rgba(255, 107, 107, 0.9)'
+  // Memoize factors data to ensure charts update when prediction changes
+  const factorsData = useMemo(() => {
+    if (!prediction) return null;
+    console.log(probabilityData)
+return {
+      labels: prediction.factors.map(factor => factor.name),
+      datasets: [{
+        label: 'Impact Score (%)',
+        data: prediction.factors.map(factor => factor.impact),
+        backgroundColor: prediction.factors.map(factor => {
+          if (factor.impact > 70) return 'rgba(255, 107, 107, 0.8)'; // High impact - Red
+          if (factor.impact > 40) return 'rgba(255, 212, 59, 0.8)';  // Medium impact - Yellow  
+          return 'rgba(81, 207, 102, 0.8)'; // Low impact - Green
+        }),
+        borderColor: prediction.factors.map(factor => {
+          if (factor.impact > 70) return '#ff5252'; // High impact - Dark Red
+          if (factor.impact > 40) return '#ffc107'; // Medium impact - Dark Yellow
+          return '#4caf50'; // Low impact - Dark Green
+        }),
+        borderWidth: 2,
+        borderRadius: 8,
+        borderSkipped: false,
+        hoverBackgroundColor: prediction.factors.map(factor => {
+          if (factor.impact > 70) return 'rgba(255, 107, 107, 1)';
+          if (factor.impact > 40) return 'rgba(255, 212, 59, 1)';
+          return 'rgba(81, 207, 102, 1)';
+        }),
+        hoverBorderColor: prediction.factors.map(factor => {
+          if (factor.impact > 70) return '#d32f2f'; // Darker red on hover
+          if (factor.impact > 40) return '#f57c00'; // Darker orange on hover
+          return '#388e3c'; // Darker green on hover
+        }),
+        hoverBorderWidth: 3,
+        // Add gradient effect
+        gradient: {
+          backgroundColor: {
+            axis: 'y',
+            colors: {
+              0: 'rgba(81, 207, 102, 0.1)',
+              100: 'rgba(255, 107, 107, 0.9)'
+            }
           }
         }
-      }
-    }]
-  } : null;
+      }]
+    };
+  }, [prediction]);
+  console.log(factorsData)
 
   return (
     <div className="prediction">
@@ -409,21 +269,24 @@ const Prediction = () => {
                 <div className="form-grid">
                   <div className="form-group">
                     <label className="form-label">
-                      Age <span className="required">*</span>
+                      Senior Citizen <span className="required">*</span>
                     </label>
-                    <input
-                      type="number"
-                      name="age"
-                      value={formData.age}
+                    <select
+                      name="seniorCitizen"
+                      value={formData.seniorCitizen}
                       onChange={handleInputChange}
-                      className={`form-control ${formErrors.age ? 'error' : ''}`}
-                      placeholder="Enter age (18-100)"
-                      min="18"
-                      max="100"
+                      className={`form-control ${formErrors.seniorCitizen ? 'error' : ''}`}
                       required
-                    />
-                    {formErrors.age && <span className="error-text">{formErrors.age}</span>}
+                    >
+                      <option value="">Select</option>
+                      <option value="0">No</option>
+                      <option value="1">Yes</option>
+                    </select>
+                    {formErrors.seniorCitizen && (
+                      <span className="error-text">{formErrors.seniorCitizen}</span>
+                    )}
                   </div>
+
                   
                   <div className="form-group">
                     <label className="form-label">
@@ -441,24 +304,6 @@ const Prediction = () => {
                       required
                     />
                     {formErrors.tenure && <span className="error-text">{formErrors.tenure}</span>}
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">
-                      Monthly Charges ($) <span className="required">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      name="monthlyCharges"
-                      value={formData.monthlyCharges}
-                      onChange={handleInputChange}
-                      className={`form-control ${formErrors.monthlyCharges ? 'error' : ''}`}
-                      placeholder="Enter monthly charges"
-                      step="0.01"
-                      min="0"
-                      required
-                    />
-                    {formErrors.monthlyCharges && <span className="error-text">{formErrors.monthlyCharges}</span>}
                   </div>
                   
                   <div className="form-group">
@@ -489,68 +334,42 @@ const Prediction = () => {
                       <option value="Credit card">Credit card</option>
                     </select>
                   </div>
+
+                  <div className="form-group">
+                    <label className="form-label">
+                      Monthly Charges ($) <span className="required">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      name="monthlyCharges"
+                      value={formData.monthlyCharges}
+                      onChange={handleInputChange}
+                      className={`form-control ${formErrors.monthlyCharges ? 'error' : ''}`}
+                      placeholder="Enter monthly charges"
+                      step="0.01"
+                      min="0"
+                      required
+                    />
+                    {formErrors.monthlyCharges && <span className="error-text">{formErrors.monthlyCharges}</span>}
+                  </div>
+
                 </div>
 
                 <button
                   type="submit"
                   className="btn btn-primary btn-lg prediction-btn"
-                  disabled={loading || progressLoading}
+                  disabled={loading}
                 >
-                  {loading || progressLoading ? (
-                    <>
-                      <LoadingSpinner 
-                        variant="dots" 
-                        size="small" 
-                        inline 
-                        color="primary"
-                      />
-                      <span className="loading-text">
-                        {currentStage === 'validating' && 'Validating data...'}
-                        {currentStage === 'processing' && 'Processing input...'}
-                        {currentStage === 'analyzing' && 'Analyzing patterns...'}
-                        {currentStage === 'complete' && 'Finalizing results...'}
-                      </span>
-                      <div className="loading-progress">
-                        <div 
-                          className="progress-bar" 
-                          style={{ width: `${loadingProgress}%` }}
-                        />
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <span className="btn-icon">🔮</span>
-                      <span>Predict Churn</span>
-                    </>
-                  )}
+                  <span className="btn-icon">🔮</span>
+                  <span>Predict Churn</span>
                 </button>
               </form>
             </div>
           </div>
 
           <div className="results-section">
-            {loading || progressLoading ? (
+            {prediction ? (
               <div className="prediction-results">
-                <LoadingOverlay isVisible={true} backdrop={false}>
-                  <SkeletonLoader variant="card" className="result-skeleton" />
-                </LoadingOverlay>
-                
-                <div className="loading-stage-indicator">
-                  <ProgressSpinner 
-                    progress={loadingProgress} 
-                    size="large"
-                    showPercentage={true}
-                  />
-                  <div className="stage-text">
-                    {currentStage === 'validating' && '🔍 Validating your data...'}
-                    {currentStage === 'processing' && '⚙️ Processing information...'}
-                    {currentStage === 'analyzing' && '🧠 Analyzing patterns...'}
-                    {currentStage === 'complete' && '✨ Generating insights...'}
-                  </div>
-                </div>
-              </div>
-            ) : prediction ? (
-              <div className="prediction-results" ref={chartRef}>
                 <div className="card result-card">
                   <div className="result-header">
                     <h2>
@@ -619,15 +438,16 @@ const Prediction = () => {
                     Risk Distribution
                   </h3>
                   <div className="chart-container">
-                    {isChartVisible ? (
+                    {probabilityData && (
                       <AnimatedChart 
+                        key={`probability-${prediction.churnProbability}`}
                         type="doughnut"
                         data={probabilityData}
                         animate={true}
                         delay={300}
                         enableMobileGestures={true}
                         title="Churn Probability Distribution"
-                        options={{
+                      options={{
                           responsive: true,
                           maintainAspectRatio: false,
                           cutout: '65%',
@@ -673,8 +493,6 @@ const Prediction = () => {
                           }
                         }}
                       />
-                    ) : (
-                      <SkeletonLoader variant="chart" />
                     )}
                   </div>
                 </div>
@@ -685,15 +503,16 @@ const Prediction = () => {
                     Feature Impact Analysis
                   </h3>
                   <div className="chart-container">
-                    {isChartVisible ? (
+                    {factorsData && (
                       <AnimatedChart 
+                        key={`factors-${prediction.churnProbability}`}
                         type="bar"
                         data={factorsData}
                         animate={true}
                         delay={600}
                         enableMobileGestures={true}
                         title="Risk Factors by Impact"
-                        options={{
+                      options={{
                           responsive: true,
                           maintainAspectRatio: false,
                           animation: {
@@ -790,9 +609,8 @@ const Prediction = () => {
                           }
                         }}
                       />
-                    ) : (
-                      <SkeletonLoader variant="chart" />
                     )}
+                    
                   </div>
                 </div>
 

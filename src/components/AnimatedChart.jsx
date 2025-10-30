@@ -41,7 +41,7 @@ const AnimatedChart = ({
   const chartRef = useRef(null);
   const containerRef = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [touchStart, setTouchStart] = useState(null);
   const [touchEnd, setTouchEnd] = useState(null);
   const [isZoomed, setIsZoomed] = useState(false);
@@ -358,6 +358,7 @@ const AnimatedChart = ({
     const enhancedData = getEnhancedData();
 
     const props = {
+      key: JSON.stringify(enhancedData),
       ref: chartRef,
       data: enhancedData,
       options: enhancedOptions,
