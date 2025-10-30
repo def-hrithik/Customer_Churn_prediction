@@ -15,6 +15,8 @@ scaler = joblib.load(SCALER_PATH)
 MODEL_PATH = os.path.join(BASE_DIR, "model.h5")
 model = tf.keras.models.load_model(MODEL_PATH)
 
+app = Flask(__name__)
+
 # Define expected features (total 26)
 all_features = [
     'gender', 
