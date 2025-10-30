@@ -3,8 +3,10 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 import joblib
+import os
 
-SCALER_PATH = 'scaler.pkl'
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+SCALER_PATH = os.path.join(BASE_DIR, "scaler.pkl")
 scaler = joblib.load(SCALER_PATH)
 
 
