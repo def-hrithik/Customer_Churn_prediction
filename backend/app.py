@@ -6,14 +6,13 @@ import joblib
 import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Load scaler
 SCALER_PATH = os.path.join(BASE_DIR, "scaler.pkl")
 scaler = joblib.load(SCALER_PATH)
 
-
-app = Flask(__name__)
-
 # Load Keras model
-MODEL_PATH = 'model.h5'
+MODEL_PATH = os.path.join(BASE_DIR, "model.h5")
 model = tf.keras.models.load_model(MODEL_PATH)
 
 # Define expected features (total 26)
